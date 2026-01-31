@@ -5,6 +5,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const bottomFrost = document.getElementById('bottom-frost');
   const img = document.querySelector('.fullscreen-image');
   let entered = false;
+  // Preload audio for mobile readiness (learned from old project)
+  let audioReady = false;
+  const preloadAudio = new Audio('sexi.mp3');
+  preloadAudio.loop = true;
+  preloadAudio.preload = 'auto';
+  preloadAudio.muted = true;
+  preloadAudio.addEventListener('canplaythrough', function() { audioReady = true; }, { once: true });
+  preloadAudio.addEventListener('error', function() { audioReady = false; });
+  try { preloadAudio.play().catch(() => {}); } catch(_e) { }
+  const waitForAudio = () => new Promise(resolve => {
+    if (audioReady) return resolve();
+    const t = setInterval(() => {
+      if (audioReady) { clearInterval(t); resolve(); }
+    }, 50);
+  });
 
   // Frosting heights updates
   const updateFrost = () => {
@@ -21,11 +36,15 @@ document.addEventListener('DOMContentLoaded', function() {
   if (img.complete) updateFrost();
 
   // Enter flow: tap to enter starts audio and hides loading overlay
-  const enterSite = () => {
+  const enterSite = async () => {
     if (entered) return;
     entered = true;
+    // Ensure audio is allowed to play on this gesture
     if (audio.muted) audio.muted = false;
+    // Ensure audible volume (no mute toggle by user)
+    audio.volume = 1.0;
     audio.currentTime = 0;
+    await waitForAudio();
     audio.play().catch(() => {
       // If play fails due to policy, user interaction should fix it
     });
