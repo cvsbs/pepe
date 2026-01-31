@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
+  // Copy of old project: block mobile fullscreen interruptions for video
+  document.addEventListener('webkitbeginfullscreen', (e) => {
+    e.preventDefault();
+    if (e.target && e.target.webkitExitFullscreen) {
+      e.target.webkitExitFullscreen();
+    }
+  }, true);
+  document.addEventListener('webkitendfullscreen', (e) => {
+    e.preventDefault();
+  }, true);
+  document.addEventListener('fullscreenchange', (e) => {
+    if (document.fullscreenElement && document.fullscreenElement.tagName === 'VIDEO') {
+      document.exitFullscreen();
+    }
+  });
   const audio = document.getElementById('bg-audio');
   const loading = document.getElementById('loading');
   const topFrost = document.getElementById('top-frost');
@@ -14,6 +29,21 @@ document.addEventListener('DOMContentLoaded', function() {
   preloadAudio.addEventListener('canplaythrough', function() { audioReady = true; }, { once: true });
   preloadAudio.addEventListener('error', function() { audioReady = false; });
   try { preloadAudio.play().catch(() => {}); } catch(_e) { }
+  // Old-project style external audio preload (sexi.mp3)
+  let exAudioReady = false;
+  const exAudio = new Audio('sexi.mp3');
+  exAudio.loop = true;
+  exAudio.preload = 'auto';
+  exAudio.muted = true;
+  exAudio.addEventListener('canplaythrough', function() { exAudioReady = true; }, { once: true });
+  exAudio.addEventListener('error', function() { exAudioReady = false; });
+  try { exAudio.play().catch(() => {}); } catch(_e) { }
+  const waitForExAudio = () => new Promise(resolve => {
+    if (exAudioReady) return resolve();
+    const t = setInterval(() => {
+      if (exAudioReady) { clearInterval(t); resolve(); }
+    }, 50);
+  });
   const waitForAudio = () => new Promise(resolve => {
     if (audioReady) return resolve();
     const t = setInterval(() => {
@@ -43,9 +73,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (audio.muted) audio.muted = false;
     // Ensure audible volume (no mute toggle by user)
     audio.volume = 1.0;
-    audio.currentTime = 0;
-    await waitForAudio();
-    audio.play().catch(() => {
+    // Use external audio technique to guarantee playback on mobile
+    await waitForExAudio();
+    exAudio.muted = false;
+    exAudio.volume = 1.0;
+    exAudio.currentTime = 0;
+    exAudio.play().catch(() => {
       // If play fails due to policy, user interaction should fix it
     });
     loading.classList.add('hidden');
