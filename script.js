@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const topFrost = document.getElementById('top-frost');
   const bottomFrost = document.getElementById('bottom-frost');
   const img = document.querySelector('.fullscreen-image');
+  let entered = false;
 
   // Frosting heights updates
   const updateFrost = () => {
@@ -21,6 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Enter flow: tap to enter starts audio and hides loading overlay
   const enterSite = () => {
+    if (entered) return;
+    entered = true;
     if (audio.muted) audio.muted = false;
     audio.currentTime = 0;
     audio.play().catch(() => {
@@ -32,6 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bottomFrost) bottomFrost.style.display = 'none';
   };
   loading.addEventListener('pointerdown', enterSite, { once: true });
+  loading.addEventListener('click', enterSite, { once: true });
+  loading.addEventListener('touchstart', enterSite, { passive: true, once: true });
 
   // Stop audio if page is closed/unloaded
   window.addEventListener('beforeunload', function() {
